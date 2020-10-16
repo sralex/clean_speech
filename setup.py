@@ -7,10 +7,10 @@ setup(
     include_package_data=True,
     scripts=['bin/clean_speech'],
     install_requires=[
-    	"scipy==1.5.2",
+    	"scipy>=1.5.2",
         "tensorflow==1.5.0",
         "keras==2.2.3",
-        "soundfile==0.10.3.post1"
+        "soundfile>=0.10.3.post1"
       ],
     zip_safe=False
 )
