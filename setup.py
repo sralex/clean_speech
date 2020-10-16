@@ -2,6 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='clean_speech',
+    version='0.0.1',
     packages=find_packages(),#['speech_enhance'],
     package_data={'clean_speech': ['*.json','*.h5']},
     include_package_data=True,
