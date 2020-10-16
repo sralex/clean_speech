@@ -12,7 +12,7 @@ The main purpose of the system is to separate the human voice from everything el
 
 ## Prerequisites
 
-* python >= 3.6
+* python == 3.6
 * pip3
 
 ## Instructions
