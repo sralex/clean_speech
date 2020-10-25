@@ -55,7 +55,7 @@ def feature_extractor(data, nperseg = 512, noverlap = 256):
     return X[...,np.newaxis], complex_array[...,np.newaxis]
 
 
-def create_file(results,complex_,real_length,save_filename, nperseg = 512, noverlap = 256):
+def convert_to_audiowave(results,complex_, nperseg = 512, noverlap = 256):
         
         recovered_a = []
 
@@ -65,5 +65,5 @@ def create_file(results,complex_,real_length,save_filename, nperseg = 512, nover
             
             recovered_a.append(source_recovered_a)
         
-        sf.write("{}.wav".format(".".join(save_filename.split(".")[0:-1])),np.array(recovered_a).reshape(-1)[0:real_length],FS)
-
+        return np.array(recovered_a).reshape(-1)
+    

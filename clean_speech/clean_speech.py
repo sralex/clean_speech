@@ -9,18 +9,12 @@ import scipy
 from tkinter import messagebox
 from keras.models import model_from_json
 
-from clean_speech import feature_extractor, create_file
+from clean_speech import feature_extractor, convert_to_audiowave
 
 
 SR = 16000
 
-def c_speech(filename,save_filename,progress_f = None):
-
-    data, sr = sf.read(filename)
-    if sr != SR:
-        secs = len(data)/float(sr) # Number of seconds in signal X
-        samps = int(secs*SR)     # Number of samples to downsample
-        data = scipy.signal.resample(data, samps)
+def clean(data,progress_f = None):
 
     magnitudes, complex_ = feature_extractor(data)
 
@@ -28,8 +22,39 @@ def c_speech(filename,save_filename,progress_f = None):
 
     predictions = predict(magnitudes,progress_f)
 
-    create_file(predictions,complex_,real_length,save_filename)
+    return convert_to_audiowave(predictions,complex_)[0:real_length]
 
+def check_sr(data,current_sr,target_sr):
+
+    if current_sr != target_sr:
+        secs = len(data)/float(current_sr) # Number of seconds in signal X
+        samps = int(secs*target_sr)     # Number of samples to downsample
+        data = scipy.signal.resample(data, samps)
+
+    return data
+
+def c_speech(target_sr,filename,save_filename,progress_f = None):
+
+    data, current_sr = sf.read(filename)
+
+    data = check_sr(data, current_sr, target_sr)
+
+    if len(data.shape) <= 2:
+
+        if len(data.shape) == 1:
+
+            data = clean(data,progress_f)
+
+        else:
+            data_list = []
+
+            for i in range(data.shape[1]):
+            
+                data_list.append(clean(data[:,0],progress_f)[:,np.newaxis])
+
+            data = np.concatenate(data_list)
+
+    sf.write(save_filename,data,target_sr)
 
 def predict(magnitudes ,progress_f = None):
     
@@ -79,7 +104,8 @@ def Predict(event=None):
         messagebox.showinfo(title="Validation error", message="source file and output file must be selected")
         return
         
-    c_speech(e1_str.get(),e2_str.get(),progress_tk_f)
+    c_speech(SR, e1_str.get(),e2_str.get(),progress_tk_f)
+    progress['value'] = 100
     message_str.set("Task done!")
 
 model = compile_model()
