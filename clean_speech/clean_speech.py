@@ -20,16 +20,17 @@ def clean(data,progress_f = None):
 
     real_length = len(data)
 
-    predictions = predict(magnitudes,progress_f)
+    total = len(magnitudes)
+    
+    predictions = predict(magnitudes,total,progress_f)
 
     return convert_to_audiowave(predictions,complex_)[0:real_length]
 
-def check_sr(data,current_sr,target_sr):
+def resample(data,current_sr,target_sr):
 
-    if current_sr != target_sr:
-        secs = len(data)/float(current_sr) # Number of seconds in signal X
-        samps = int(secs*target_sr)     # Number of samples to downsample
-        data = scipy.signal.resample(data, samps)
+    secs = len(data)/float(current_sr) # Number of seconds in signal X
+    samps = int(secs*target_sr)     # Number of samples to downsample
+    data = scipy.signal.resample(data, samps)
 
     return data
 
@@ -37,30 +38,30 @@ def c_speech(target_sr,filename,save_filename,progress_f = None):
 
     data, current_sr = sf.read(filename)
 
-    data = check_sr(data, current_sr, target_sr)
+    if current_sr != target_sr:
+        data = resample(data,current_sr,target_sr)
 
     if len(data.shape) <= 2:
 
         if len(data.shape) == 1:
 
-            data = clean(data,progress_f)
+            data = clean(data,progress_f(1,1))
 
         else:
             data_list = []
 
             for i in range(data.shape[1]):
-            
-                data_list.append(clean(data[:,0],progress_f)[:,np.newaxis])
+                data_list.append(clean(data[:,0],progress_f(i+1,data.shape[1]))[:,np.newaxis])
 
-            data = np.concatenate(data_list)
+            data = np.concatenate(data_list,axis = 1)
 
     sf.write(save_filename,data,target_sr)
 
-def predict(magnitudes ,progress_f = None):
+def predict(magnitudes, total, progress_f = None):
     
     predictions = np.zeros(magnitudes.shape)
     
-    total_features = len(magnitudes)
+    
 
     for i in range(magnitudes.shape[0]):
         
@@ -69,14 +70,16 @@ def predict(magnitudes ,progress_f = None):
         predictions[i,:,:,:] = pred[0,:,:,0:1]
 
         if not progress_f is None:
-            progress_f(i,total_features)
+            progress_f(i,total)
 
     return predictions
 
-def progress_tk_f(y,total_features):
-    progress['value'] = int((y / float(total_features)) * 100)
-    message_str.set("Cleaning ... {}%".format(int((y / float(total_features)) * 100)))
-    master.update_idletasks() 
+def progress_tk_f(n,m):
+    def wrapper(i,total):
+        progress['value'] = int((i / float(total)) * 100)
+        message_str.set("Cleaning {}/{} {}%".format(n,m,int((i / float(total)) * 100)))
+        master.update_idletasks()
+    return wrapper
 
 def compile_model():
     json_file = open(os.path.join(os.path.abspath(os.path.dirname(__file__)),'model.json'), 'r')
